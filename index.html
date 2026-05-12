@@ -14,38 +14,47 @@
             align-items: center; 
             justify-content: center; 
             height: 100vh; 
-            margin: 0; 
+            margin: 0;
             overflow: hidden;
         }
-        .container { width: 95%; max-width: 800px; text-align: center; }
-        h1 { font-size: 1.2rem; color: #ff3e3e; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
-        video { 
-            width: 100%; 
-            border-radius: 12px; 
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3); 
+        .container { width: 95%; max-width: 900px; text-align: center; }
+        h1 { font-size: 1.2rem; color: #ff3e3e; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* This box holds the video window */
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
             background: #111;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
         }
         .footer { margin-top: 15px; font-size: 10px; color: #444; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
     <div class="container">
         <h1>Exclusive Stream</h1>
         
-        <video id="player" controls controlsList="nodownload" disablePictureInPicture preload="metadata">
-            <source src="https://drive.google.com/uc?export=download&id=1-Q0_N73cBwjGw1jl7ksFE8-zeYf6nd-y&confirm=t#t=0.001" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
+        <div class="video-wrapper">
+            <iframe 
+                src="https://drive.google.com/file/d/1-Q0_N73cBwjGw1jl7ksFE8-zeYf6nd-y/preview" 
+                allow="autoplay">
+            </iframe>
+        </div>
 
-        <p class="footer">STRICTLY NO DOWNLOADING • NEW CONTENT EVERY 2 DAYS</p>
+        <p class="footer">NEW MOVIE EVERY 2 DAYS • ENJOY THE SHOW</p>
     </div>
-
-    <script>
-        // Extra protection: hides the 'Download' option in some mobile browsers
-        const video = document.getElementById('player');
-        video.addEventListener('contextmenu', (e) => e.preventDefault());
-    </script>
 
 </body>
 </html>
