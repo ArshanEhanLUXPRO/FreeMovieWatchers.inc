@@ -1,24 +1,34 @@
 // ============================================
-// Google OAuth Login
+// Google OAuth Login (Mock for Development)
 // ============================================
 function initGoogleSignIn() {
-    // Initialize Google Sign-In
-    google.accounts.id.initialize({
-        client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com', // Replace with your actual Client ID
-        callback: handleGoogleSignIn
-    });
-
-    // Render the Google Sign-In button
     const googleButton = document.getElementById('googleLoginBtn');
     if (googleButton) {
         googleButton.addEventListener('click', function() {
-            google.accounts.id.prompt();
+            // For development: Show Google login modal or redirect
+            mockGoogleSignIn();
         });
     }
 }
 
+function mockGoogleSignIn() {
+    // Create a mock Google auth response
+    // In production, you'll use: google.accounts.id.initialize()
+    const mockToken = generateMockJWT({
+        iss: 'https://accounts.google.com',
+        sub: 'google_' + Math.random().toString(36).substr(2, 9),
+        email: 'testuser@gmail.com',
+        name: 'Google Test User',
+        picture: 'https://via.placeholder.com/150',
+        aud: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600
+    });
+
+    handleGoogleSignIn({ credential: mockToken });
+}
+
 function handleGoogleSignIn(response) {
-    // response.credential contains the JWT
     const token = response.credential;
     
     console.log('Google Sign-In successful');
@@ -29,6 +39,9 @@ function handleGoogleSignIn(response) {
 }
 
 function authenticateWithGoogle(token) {
+    // Show loading state
+    showLoading('Signing in with Google...');
+
     // Send token to your backend
     fetch('/api/auth/google', {
         method: 'POST',
@@ -39,59 +52,79 @@ function authenticateWithGoogle(token) {
     })
     .then(response => response.json())
     .then(data => {
+        hideLoading();
         if (data.success) {
             // Store auth token and redirect to dashboard
             localStorage.setItem('authToken', data.authToken);
-            window.location.href = '/dashboard.html';
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showSuccess('Google login successful!');
+            setTimeout(() => {
+                window.location.href = '/dashboard.html';
+            }, 500);
         } else {
-            showError('Google authentication failed');
+            showError(data.message || 'Google authentication failed');
         }
     })
     .catch(error => {
+        hideLoading();
         console.error('Error:', error);
         showError('An error occurred during authentication');
     });
 }
 
 // ============================================
-// Apple OAuth Login
+// Apple OAuth Login (Mock for Development)
 // ============================================
 function initAppleSignIn() {
-    AppleID.auth.init({
-        clientId: 'com.freemoviewatchers.app', // Replace with your Service ID
-        teamId: 'YOUR_TEAM_ID', // Replace with your Team ID
-        redirectUri: window.location.origin + '/auth/apple/callback',
-        scope: 'name email',
-        redirectMethod: 'form',
-        usePopup: true,
-    });
-
     const appleButton = document.getElementById('appleLoginBtn');
     if (appleButton) {
         appleButton.addEventListener('click', function() {
-            AppleID.auth.signIn();
+            // For development: Show Apple login modal
+            mockAppleSignIn();
         });
     }
 }
 
-// Handle Apple Sign-In response
-document.addEventListener('AppleIDSignInOnSuccess', (event) => {
-    const user = event.detail.user;
-    const identityToken = event.detail.authorization.id_token;
+function mockAppleSignIn() {
+    // Create a mock Apple auth response
+    const mockToken = generateMockJWT({
+        iss: 'https://appleid.apple.com',
+        sub: 'apple_' + Math.random().toString(36).substr(2, 9),
+        email: 'testuser@icloud.com',
+        email_verified: true,
+        aud: 'com.freemoviewatchers.app',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600
+    });
+
+    const mockUser = {
+        name: 'Apple Test User',
+        email: 'testuser@icloud.com'
+    };
+
+    handleAppleSignIn({ 
+        detail: {
+            user: mockUser,
+            authorization: { id_token: mockToken }
+        }
+    });
+}
+
+function handleAppleSignIn(response) {
+    const { user, authorization } = response.detail;
+    const token = authorization.id_token;
     
     console.log('Apple Sign-In successful');
     console.log('User:', user);
     
     // Send the token to your backend for verification
-    authenticateWithApple(identityToken, user);
-});
-
-document.addEventListener('AppleIDSignInOnFailure', (event) => {
-    console.error('Apple Sign-In failed:', event.detail);
-    showError('Apple authentication failed');
-});
+    authenticateWithApple(token, user);
+}
 
 function authenticateWithApple(token, user) {
+    // Show loading state
+    showLoading('Signing in with Apple...');
+
     // Send token to your backend
     fetch('/api/auth/apple', {
         method: 'POST',
@@ -105,15 +138,21 @@ function authenticateWithApple(token, user) {
     })
     .then(response => response.json())
     .then(data => {
+        hideLoading();
         if (data.success) {
             // Store auth token and redirect to dashboard
             localStorage.setItem('authToken', data.authToken);
-            window.location.href = '/dashboard.html';
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showSuccess('Apple login successful!');
+            setTimeout(() => {
+                window.location.href = '/dashboard.html';
+            }, 500);
         } else {
-            showError('Apple authentication failed');
+            showError(data.message || 'Apple authentication failed');
         }
     })
     .catch(error => {
+        hideLoading();
         console.error('Error:', error);
         showError('An error occurred during authentication');
     });
@@ -179,14 +218,19 @@ function handleEmailLogin() {
         if (data.success) {
             // Store auth token
             localStorage.setItem('authToken', data.authToken);
+            localStorage.setItem('user', JSON.stringify(data.user));
             
             // Optionally store email if "Remember me" is checked
             if (rememberMe) {
                 localStorage.setItem('rememberedEmail', email);
             }
 
+            showSuccess('Login successful!');
+            
             // Redirect to dashboard
-            window.location.href = '/dashboard.html';
+            setTimeout(() => {
+                window.location.href = '/dashboard.html';
+            }, 500);
         } else {
             showError(data.message || 'Login failed. Please try again.');
         }
@@ -202,9 +246,19 @@ function handleEmailLogin() {
 // ============================================
 // Utility Functions
 // ============================================
+
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+}
+
+function generateMockJWT(payload) {
+    // This is a MOCK JWT for development only
+    // Do NOT use in production
+    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    const body = btoa(JSON.stringify(payload));
+    const signature = btoa('mock-signature');
+    return `${header}.${body}.${signature}`;
 }
 
 function showError(message) {
@@ -234,6 +288,83 @@ function showError(message) {
         errorDiv.style.animation = 'slideOutRight 0.3s ease-out';
         setTimeout(() => errorDiv.remove(), 300);
     }, 5000);
+}
+
+function showSuccess(message) {
+    // Create success notification
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-notification';
+    successDiv.textContent = message;
+    
+    // Add styles for success notification
+    successDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #4caf50;
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        z-index: 1000;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(successDiv);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        successDiv.style.animation = 'slideOutRight 0.3s ease-out';
+        setTimeout(() => successDiv.remove(), 300);
+    }, 3000);
+}
+
+function showLoading(message = 'Loading...') {
+    // Create loading overlay
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loadingOverlay';
+    loadingDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+    `;
+    
+    loadingDiv.innerHTML = `
+        <div style="
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        ">
+            <div style="
+                width: 40px;
+                height: 40px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #667eea;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 16px;
+            "></div>
+            <p style="color: #333; font-size: 16px; margin: 0;">${message}</p>
+        </div>
+    `;
+    
+    document.body.appendChild(loadingDiv);
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('loadingOverlay');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
 }
 
 // Check if user is already logged in
@@ -300,6 +431,11 @@ style.textContent = `
             opacity: 0;
             transform: translateX(100px);
         }
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 `;
 document.head.appendChild(style);
